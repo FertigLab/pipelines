@@ -1,3 +1,4 @@
+//usage nextflow run --data ~/Documents/data/breastcancer/
 // Declare syntax version
 nextflow.enable.dsl=2
 
@@ -9,15 +10,12 @@ params.sparse = 1
 
 
 process preprocess {
-    container 'satijalab/seurat:5.0.0'
     input:
         path data 
     output:
-        path 'data.rds'
+        path 'matrix.mtx'
     """
-    Rscript -e 'res <- Seurat::Read10X("$data");
-                res <- Seurat::NormalizeData(res);
-                saveRDS(res, file="data.rds")'
+    gunzip -c $data/filtered_feature_bc_matrix/matrix.mtx.gz > matrix.mtx
     """
 }
 
@@ -42,5 +40,5 @@ process cogaps {
 
 workflow {
   def input = Channel.fromPath(params.data)
-  preprocess(input) | view
+  preprocess(input) | cogaps | view
 }
