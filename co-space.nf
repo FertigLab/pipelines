@@ -14,50 +14,57 @@ params.sparse = 1
 
 
 process PREPROCESS {
-    container 'docker.io/satijalab/seurat:5.0.0'
+  container 'docker.io/satijalab/seurat:5.0.0'
 
-    input:
-        path data 
-    output:
-        path 'dgCMatrix.rds'
-    """
-    Rscript -e 'res <- Seurat::Read10X("$data/raw_feature_bc_matrix/");
-                res <- Seurat::NormalizeData(res);
-                saveRDS(res, file="dgCMatrix.rds")';
-    """
+  input:
+      path data 
+  output:
+      path 'dgCMatrix.rds'
+
+  """
+  Rscript -e 'res <- Seurat::Read10X("$data/raw_feature_bc_matrix/");
+              res <- Seurat::NormalizeData(res);
+              saveRDS(res, file="dgCMatrix.rds")';
+  """
 }
 
 process COGAPS {
-    container 'ghcr.io/fertiglab/cogaps:3.21.5'
-    input:
-      path 'dgCMatrix.rds'
-    output:
-      path  'cogapsresult.rds'
-    """
-    Rscript -e 'library("CoGAPS");
-        sparse <- readRDS("dgCMatrix.rds");
-        data <- as.matrix(sparse) #this converts to a dense matrix unfortunately
-        cogapsresult <- CoGAPS(data = data, nPatterns = $params.npatterns, \
-                                nIterations = $params.niterations, \
-                                sparseOptimization = as.logical($params.sparse))
-        saveRDS(cogapsresult, file = "cogapsresult.rds")'
-    """
+  container 'ghcr.io/fertiglab/cogaps:3.21.5'
+  input:
+    path 'dgCMatrix.rds'
+  output:
+    path  'cogapsresult.rds'
+
+  """
+  Rscript -e 'library("CoGAPS");
+      sparse <- readRDS("dgCMatrix.rds");
+      data <- as.matrix(sparse) #this converts to a dense matrix unfortunately
+      cogapsresult <- CoGAPS(data = data, nPatterns = $params.npatterns, \
+                              nIterations = $params.niterations, \
+                              sparseOptimization = as.logical($params.sparse))
+      saveRDS(cogapsresult, file = "cogapsresult.rds")'
+  """
 }
 
-process SPM_PATTERNS {
-    container 'ghcr.io/fertiglab/spacemarkers:0.0.0'
-    input:
-      path data
-      path 'cogapsresult.rds'
-    output:
-      path 'sppatterns.rds'
-    """
-    Rscript -e 'library("SpaceMarkers");
-      coords <- load10XCoords("$data");
-      features <- getSpatialFeatures("cogapsresult.rds");
-      patterns <- cbind(coords, features);
-      saveRDS(patterns, file = "sppatterns.rds")';
-    """
+process SPACEMARKERS {
+  container 'ghcr.io/fertiglab/spacemarkers:0.0.0'
+  input:
+    path data
+    path 'cogapsresult.rds'
+  output:
+    path 'sppatterns.rds'
+    path 'hotspots.rds'
+
+  """
+  Rscript -e 'library("SpaceMarkers");
+    coords <- load10XCoords("$data");
+    features <- getSpatialFeatures("cogapsresult.rds");
+    patterns <- cbind(coords, features);
+    saveRDS(patterns, file = "sppatterns.rds");
+
+    hotspots <- getSpatialParameters(patterns);
+    saveRDS(hotspots, file = "hotspots.rds");'
+  """
 }
 
 
@@ -65,6 +72,6 @@ workflow {
   def input = Channel.fromPath(params.data)
   PREPROCESS(input)
   COGAPS(PREPROCESS.out)
-  SPM_PATTERNS(input, COGAPS.out)
+  SPACEMARKERS(input, COGAPS.out)
   view
 }
