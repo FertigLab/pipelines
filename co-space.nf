@@ -2,6 +2,7 @@
 // nextflow run co-space.nf --data ~/Documents/data/breastcancer/filtered_feature_bc_matrix -w wd
 // make sure wd directory has really low access requirements for docker to be able to populate it
 // export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true in case entrypoint of container is not /bin/bash
+// to debug inside docker e.g. docker run -it --rm -v $(pwd):/spacemarkers ghcr.io/fertiglab/spacemarkers:0.0.0
 
 nextflow.enable.dsl=2
 
@@ -20,7 +21,7 @@ process PREPROCESS {
     output:
         path 'dgCMatrix.rds'
     """
-    Rscript -e 'res <- Seurat::Read10X("$data");
+    Rscript -e 'res <- Seurat::Read10X("$data/raw_feature_bc_matrix/");
                 res <- Seurat::NormalizeData(res);
                 saveRDS(res, file="dgCMatrix.rds")';
     """
@@ -52,9 +53,9 @@ process SPM_PATTERNS {
       path 'sppatterns.rds'
     """
     Rscript -e 'library("SpaceMarkers");
-      coords <- load10Xcoords("$data");
+      coords <- load10XCoords("$data");
       features <- getSpatialFeatures("cogapsresult.rds");
-      patterns <- cbind(coord, features);
+      patterns <- cbind(coords, features);
       saveRDS(patterns, file = "sppatterns.rds")';
     """
 }
@@ -64,6 +65,6 @@ workflow {
   def input = Channel.fromPath(params.data)
   PREPROCESS(input)
   COGAPS(PREPROCESS.out)
-  //SPM_PATTERNS(input, COGAPS.out)
+  SPM_PATTERNS(input, COGAPS.out)
   view
 }
