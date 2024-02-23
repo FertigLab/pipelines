@@ -78,7 +78,6 @@ process SPACEMARKERS {
   """
 }
 
-
 workflow {
   def input = Channel.fromPath(params.data)
   PREPROCESS(input)
