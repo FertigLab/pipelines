@@ -1,5 +1,5 @@
 // usage
-// nextflow run co-space.nf --data ~/Documents/data/breastcancer -w wd -resume
+// nextflow run co-space.nf --data ~/Documents/data/breastcancer -w wd -resume -profile local
 // make sure wd has really low access requirements for docker to write there 
 
 // export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
