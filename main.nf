@@ -1,5 +1,5 @@
 // usage
-// nextflow run co-space.nf --data ~/Documents/data/breastcancer -w wd -resume -profile local
+// nextflow run --data ~/Documents/data/breastcancer -w wd -resume -profile docker
 // make sure wd has really low access requirements for docker to write there 
 
 // export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
@@ -51,7 +51,7 @@ process COGAPS {
 }
 
 process SPACEMARKERS {
-  container 'ghcr.io/fertiglab/spacemarkers:0.99.5'
+  container 'ghcr.io/fertiglab/spacemarkers:0.99.8'
   input:
     path data
     path 'cogapsResult.rds'
