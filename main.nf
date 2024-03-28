@@ -51,7 +51,7 @@ process COGAPS {
 }
 
 process SPACEMARKERS {
-  container 'ghcr.io/fertiglab/spacemarkers:0.99.5'
+  container 'ghcr.io/fertiglab/spacemarkers:0.99.8'
   input:
     path data
     path 'cogapsResult.rds'
