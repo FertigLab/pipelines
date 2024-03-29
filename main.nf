@@ -70,7 +70,6 @@ process SPACEMARKERS {
     optParams <- getSpatialParameters(spPatterns);
     saveRDS(optParams, file = "optParams.rds");
     spaceMarkers <- getInteractingGenes(data = dataMatrix, \
-                                        leaveoneout=FALSE, \
                                         optParams = optParams, \
                                         spPatterns = spPatterns, \
                                         refPattern = "Pattern_1", \
