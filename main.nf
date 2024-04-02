@@ -57,6 +57,7 @@ process SPACEMARKERS {
     path 'cogapsResult.rds'
   output:
     path 'spPatterns.rds'
+    path 'optParams.rds'
     path 'spaceMarkers.rds'
 
   """
@@ -75,11 +76,13 @@ process SPACEMARKERS {
 
     optParams <- getSpatialParameters(spPatterns);
     saveRDS(optParams, file = "optParams.rds");
+
     spaceMarkers <- getInteractingGenes(data = dataMatrix, \
                                         optParams = optParams, \
                                         spPatterns = spPatterns, \
                                         refPattern = "Pattern_1", \
                                         mode = "DE", analysis="enrichment");
+    saveRDS(spaceMarkers, file = "spaceMarkers.rds")';
               '
   """
 }
