@@ -1,5 +1,5 @@
 // usage
-// nextflow run co-space.nf --data ~/Documents/data/breastcancer -w wd -resume -profile local
+// nextflow run --data ~/Documents/data/breastcancer -w wd -resume -profile docker
 // make sure wd has really low access requirements for docker to write there 
 
 // export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
@@ -57,6 +57,7 @@ process SPACEMARKERS {
     path 'cogapsResult.rds'
   output:
     path 'spPatterns.rds'
+    path 'optParams.rds'
     path 'spaceMarkers.rds'
 
   """
@@ -67,13 +68,21 @@ process SPACEMARKERS {
     spPatterns <- cbind(coords, features);
     saveRDS(spPatterns, file = "spPatterns.rds");
 
+    #temp fix to remove barcodes with no spatial data
+    barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
+    dataMatrix <- dataMatrix[,barcodes]
+    spPatterns <- spPatterns[barcodes,]
+    message("dim check:", dim(coords), ",", dim(dataMatrix))
+
     optParams <- getSpatialParameters(spPatterns);
     saveRDS(optParams, file = "optParams.rds");
+
     spaceMarkers <- getInteractingGenes(data = dataMatrix, \
                                         optParams = optParams, \
                                         spPatterns = spPatterns, \
                                         refPattern = "Pattern_1", \
                                         mode = "DE", analysis="enrichment");
+    saveRDS(spaceMarkers, file = "spaceMarkers.rds");
               '
   """
 }
