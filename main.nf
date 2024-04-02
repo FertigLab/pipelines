@@ -67,6 +67,12 @@ process SPACEMARKERS {
     spPatterns <- cbind(coords, features);
     saveRDS(spPatterns, file = "spPatterns.rds");
 
+    #temp fix to remove barcodes with no spatial data
+    barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
+    dataMatrix <- dataMatrix[,barcodes]
+    spPatterns <- spPatterns[barcodes,]
+    message("dim check:", dim(spCoords), ",", dim(dataMatrix))
+
     optParams <- getSpatialParameters(spPatterns);
     saveRDS(optParams, file = "optParams.rds");
     spaceMarkers <- getInteractingGenes(data = dataMatrix, \
