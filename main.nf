@@ -72,7 +72,7 @@ process SPACEMARKERS {
     barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
     dataMatrix <- dataMatrix[,barcodes]
     spPatterns <- spPatterns[barcodes,]
-    message("dim check:", dim(spCoords), ",", dim(dataMatrix))
+    message("dim check:", dim(coords), ",", dim(dataMatrix))
 
     optParams <- getSpatialParameters(spPatterns);
     saveRDS(optParams, file = "optParams.rds");
@@ -82,7 +82,7 @@ process SPACEMARKERS {
                                         spPatterns = spPatterns, \
                                         refPattern = "Pattern_1", \
                                         mode = "DE", analysis="enrichment");
-    saveRDS(spaceMarkers, file = "spaceMarkers.rds")';
+    saveRDS(spaceMarkers, file = "spaceMarkers.rds");
               '
   """
 }
