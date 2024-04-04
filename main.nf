@@ -1,5 +1,5 @@
 // usage
-// nextflow run --data ~/Documents/data/breastcancer -w wd -resume -profile docker
+// nextflow run main.nf --data ~/Documents/data/breastcancer -w wd -resume -profile docker
 // make sure wd has really low access requirements for docker to write there 
 
 // export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
@@ -12,9 +12,12 @@ nextflow.enable.dsl=2
 
 // Script parameters
 params.data = ''
-params.npatterns = 5
+params.npatterns = 8
+params.nsets = 7
 params.niterations = 100
 params.sparse = 1
+params.seed = 42
+params.distributed = '"genome-wide"'
 
 
 process PREPROCESS {
@@ -34,6 +37,7 @@ process PREPROCESS {
 
 process COGAPS {
   container 'ghcr.io/fertiglab/cogaps:3.21.5'
+  cpus = params.nsets
   input:
     path 'dgCMatrix.rds'
   output:
@@ -42,10 +46,14 @@ process COGAPS {
   """
   Rscript -e 'library("CoGAPS");
       sparse <- readRDS("dgCMatrix.rds");
-      data <- as.matrix(sparse) #this converts to a dense matrix unfortunately
-      cogapsResult <- CoGAPS(data = data, nPatterns = $params.npatterns, \
-                              nIterations = $params.niterations, \
-                              sparseOptimization = as.logical($params.sparse))
+      data <- as.matrix(sparse);
+      params <- CogapsParams(seed=42,
+                             nIterations = $params.niterations,
+                             nPatterns = $params.npatterns,
+                             sparseOptimization = as.logical($params.sparse),
+                             distributed=$params.distributed);
+      params <- setDistributedParams(params, nSets = 7);
+      cogapsResult <- CoGAPS(data = data, params = params)
       saveRDS(cogapsResult, file = "cogapsResult.rds")'
   """
 }
