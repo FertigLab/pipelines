@@ -28,6 +28,12 @@ process PREPROCESS {
   output:
       path 'dgCMatrix.rds'
 
+  stub:
+  """
+  touch dgCMatrix.rds
+  """
+
+  script:
   """
   Rscript -e 'res <- Seurat::Read10X("$data/raw_feature_bc_matrix/");
               res <- Seurat::NormalizeData(res);
@@ -43,6 +49,12 @@ process COGAPS {
   output:
     path  'cogapsResult.rds'
 
+  stub:
+  """
+  touch cogapsResult.rds
+  """
+
+  script:
   """
   Rscript -e 'library("CoGAPS");
       sparse <- readRDS("dgCMatrix.rds");
@@ -68,6 +80,13 @@ process SPACEMARKERS {
     path 'optParams.rds'
     path 'spaceMarkers.rds'
 
+  stub:
+  """
+  touch spPatterns.rds
+  touch optParams.rds
+  touch spaceMarkers.rds
+  """
+  script:
   """
   Rscript -e 'library("SpaceMarkers");
     dataMatrix <- load10XExpr("$data");
@@ -95,10 +114,14 @@ process SPACEMARKERS {
   """
 }
 
-workflow {
+workflow COSPACE {
   def input = Channel.fromPath(params.data)
   PREPROCESS(input)
   COGAPS(PREPROCESS.out)
   SPACEMARKERS(input, COGAPS.out)
   view
+}
+
+workflow {
+  COSPACE()
 }
