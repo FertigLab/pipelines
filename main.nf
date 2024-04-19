@@ -1,5 +1,5 @@
 // usage
-// nextflow run main.nf --data ~/Documents/data/breastcancer -w wd -resume -profile docker
+// nextflow run main.nf --data ./samplesheet -w wd -resume -profile docker
 // make sure wd has really low access requirements for docker to write there 
 
 // export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
@@ -24,7 +24,7 @@ process PREPROCESS {
   container 'docker.io/satijalab/seurat:5.0.0'
 
   input:
-      path data 
+      tuple val(sample), path(data) 
   output:
       path 'dgCMatrix.rds'
 
@@ -73,7 +73,7 @@ process COGAPS {
 process SPACEMARKERS {
   container 'ghcr.io/fertiglab/spacemarkers:0.99.8'
   input:
-    path data
+    tuple val(sample), path(data)
     path 'cogapsResult.rds'
   output:
     path 'spPatterns.rds'
@@ -114,14 +114,11 @@ process SPACEMARKERS {
   """
 }
 
-workflow COSPACE {
-  def input = Channel.fromPath(params.data)
-  PREPROCESS(input)
-  COGAPS(PREPROCESS.out)
-  SPACEMARKERS(input, COGAPS.out)
-  view
-}
-
 workflow {
-  COSPACE()
+  def ss=Channel.fromPath(params.data)
+    | splitCsv(header:true, sep: ",")
+    | map { row-> tuple(sample=row.sample, data=file(row.data_directory)) }
+    PREPROCESS(ss)
+    COGAPS(PREPROCESS.out)
+    SPACEMARKERS(ss, COGAPS.out)
 }
