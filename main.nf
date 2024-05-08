@@ -1,5 +1,5 @@
 // usage
-// nextflow run main.nf --data ~/Documents/data/breastcancer -w wd -resume -profile docker
+// nextflow run main.nf --input ./samplesheet -w wd -resume -profile docker
 // make sure wd has really low access requirements for docker to write there 
 
 // export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
@@ -11,7 +11,7 @@
 nextflow.enable.dsl=2
 
 // Script parameters
-params.data = ''
+params.input = ''
 params.npatterns = 8
 params.nsets = 7
 params.niterations = 100
@@ -24,10 +24,16 @@ process PREPROCESS {
   container 'docker.io/satijalab/seurat:5.0.0'
 
   input:
-      path data 
+      tuple val(sample), path(data) 
   output:
       path 'dgCMatrix.rds'
 
+  stub:
+  """
+  touch dgCMatrix.rds
+  """
+
+  script:
   """
   Rscript -e 'res <- Seurat::Read10X("$data/raw_feature_bc_matrix/");
               res <- Seurat::NormalizeData(res);
@@ -43,6 +49,12 @@ process COGAPS {
   output:
     path  'cogapsResult.rds'
 
+  stub:
+  """
+  touch cogapsResult.rds
+  """
+
+  script:
   """
   Rscript -e 'library("CoGAPS");
       sparse <- readRDS("dgCMatrix.rds");
@@ -61,13 +73,20 @@ process COGAPS {
 process SPACEMARKERS {
   container 'ghcr.io/fertiglab/spacemarkers:0.99.8'
   input:
-    path data
+    tuple val(sample), path(data)
     path 'cogapsResult.rds'
   output:
     path 'spPatterns.rds'
     path 'optParams.rds'
     path 'spaceMarkers.rds'
 
+  stub:
+  """
+  touch spPatterns.rds
+  touch optParams.rds
+  touch spaceMarkers.rds
+  """
+  script:
   """
   Rscript -e 'library("SpaceMarkers");
     dataMatrix <- load10XExpr("$data");
@@ -96,9 +115,10 @@ process SPACEMARKERS {
 }
 
 workflow {
-  def input = Channel.fromPath(params.data)
-  PREPROCESS(input)
-  COGAPS(PREPROCESS.out)
-  SPACEMARKERS(input, COGAPS.out)
-  view
+  def ss=Channel.fromPath(params.input)
+    | splitCsv(header:true, sep: ",")
+    | map { row-> tuple(sample=row.sample, data=file(row.data_directory)) }
+    PREPROCESS(ss)
+    COGAPS(PREPROCESS.out)
+    SPACEMARKERS(ss, COGAPS.out)
 }
