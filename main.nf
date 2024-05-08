@@ -1,5 +1,5 @@
 // usage
-// nextflow run main.nf --data ./samplesheet -w wd -resume -profile docker
+// nextflow run main.nf --input ./samplesheet -w wd -resume -profile docker
 // make sure wd has really low access requirements for docker to write there 
 
 // export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
@@ -11,7 +11,7 @@
 nextflow.enable.dsl=2
 
 // Script parameters
-params.data = ''
+params.input = ''
 params.npatterns = 8
 params.nsets = 7
 params.niterations = 100
@@ -115,7 +115,7 @@ process SPACEMARKERS {
 }
 
 workflow {
-  def ss=Channel.fromPath(params.data)
+  def ss=Channel.fromPath(params.input)
     | splitCsv(header:true, sep: ",")
     | map { row-> tuple(sample=row.sample, data=file(row.data_directory)) }
     PREPROCESS(ss)
