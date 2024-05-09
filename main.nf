@@ -21,23 +21,45 @@ params.distributed = '"genome-wide"'
 
 
 process PREPROCESS {
+  tag "$meta.id"
+  label 'process_single'
   container 'docker.io/satijalab/seurat:5.0.0'
 
   input:
-      tuple val(sample), path(data) 
+      tuple val(meta), path(data) 
   output:
-      path 'dgCMatrix.rds'
+      tuple val(meta), path("${prefix}/dgCMatrix.rds"), emit: dgCMatrix
+      path "versions.yml"                             , emit: versions
 
   stub:
+  def args = task.ext.args ?: ''
+  prefix = task.ext.prefix ?: "${meta.id}"
+
   """
-  touch dgCMatrix.rds
+  mkdir "${prefix}"
+  touch "${prefix}/dgCMatrix.rds"
+  cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        seurat: \$(Rscript -e 'print(packageVersion("Seurat"))' | awk '{print \$2}')
+        R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
+    END_VERSIONS
   """
 
   script:
+  def args = task.ext.args ?: ''
+  prefix = task.ext.prefix ?: "${meta.id}"
   """
+  mkdir "${prefix}"
+
   Rscript -e 'res <- Seurat::Read10X("$data/raw_feature_bc_matrix/");
               res <- Seurat::NormalizeData(res);
-              saveRDS(res, file="dgCMatrix.rds")';
+              saveRDS(res, file="${prefix}/dgCMatrix.rds")';
+
+  cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        seurat: \$(Rscript -e 'print(packageVersion("Seurat"))' | awk '{print \$2}')
+        R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
+    END_VERSIONS
   """
 }
 
@@ -47,7 +69,7 @@ process COGAPS {
   input:
     path 'dgCMatrix.rds'
   output:
-    path  'cogapsResult.rds'
+    path 'cogapsResult.rds'
 
   stub:
   """
@@ -114,11 +136,27 @@ process SPACEMARKERS {
   """
 }
 
+// workflow {
+//   def ss=Channel.fromPath(params.input)
+//     | splitCsv(header:true, sep: ",")
+//     | map { row-> tuple(sample=row.sample, data=file(row.data_directory)) }
+//     PREPROCESS(ss)
+//     COGAPS(PREPROCESS.out)
+//     SPACEMARKERS(ss, COGAPS.out)
+// }
+
+// workflow {
+// Channel.fromList([tuple([id: "sample"],
+//         file(params.input))])
+//         | map { tuple(it[0], it[1]) }
+// | PREPROCESS
+
+// }
+
 workflow {
-  def ss=Channel.fromPath(params.input)
+  Channel.fromPath(params.input)
     | splitCsv(header:true, sep: ",")
-    | map { row-> tuple(sample=row.sample, data=file(row.data_directory)) }
-    PREPROCESS(ss)
-    COGAPS(PREPROCESS.out)
-    SPACEMARKERS(ss, COGAPS.out)
+    | map { row-> tuple(meta=[id:row.sample], data=file(row.data_directory)) }
+    | PREPROCESS
 }
+ 
