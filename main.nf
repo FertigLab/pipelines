@@ -12,9 +12,9 @@ nextflow.enable.dsl=2
 
 // Script parameters
 params.input = ''
-params.npatterns = 8
-params.nsets = 7
-params.niterations = 100
+params.npatterns = 2
+params.nsets = 2
+params.niterations = 10
 params.sparse = 1
 params.seed = 42
 params.distributed = '"genome-wide"'
@@ -64,20 +64,30 @@ process PREPROCESS {
 }
 
 process COGAPS {
+  tag "$meta.id"
+  label 'process_long'
   container 'ghcr.io/fertiglab/cogaps:3.21.5'
   cpus = params.nsets
+
   input:
-    path 'dgCMatrix.rds'
+    tuple val(meta), path(dgCMatrix)
   output:
-    path 'cogapsResult.rds'
+    tuple val(meta), path("${prefix}/cogapsResult.rds"), emit: cogapsResult
 
   stub:
+  def args = task.ext.args ?: ''
+  prefix = task.ext.prefix ?: "${meta.id}"
   """
-  touch cogapsResult.rds
+  mkdir "${prefix}"
+  touch "${prefix}/cogapsResult.rds"
   """
 
   script:
+  def args = task.ext.args ?: ''
+  prefix = task.ext.prefix ?: "${meta.id}"
   """
+  mkdir "${prefix}"
+
   Rscript -e 'library("CoGAPS");
       sparse <- readRDS("dgCMatrix.rds");
       data <- as.matrix(sparse);
@@ -88,12 +98,21 @@ process COGAPS {
                              distributed=$params.distributed);
       params <- setDistributedParams(params, nSets = 7);
       cogapsResult <- CoGAPS(data = data, params = params)
-      saveRDS(cogapsResult, file = "cogapsResult.rds")'
+      saveRDS(cogapsResult, file = "${prefix}/cogapsResult.rds")'
+
+  cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        CoGAPS: \$(Rscript -e 'print(packageVersion("CoGAPS"))' | awk '{print \$2}')
+        R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
+    END_VERSIONS
   """
 }
 
 process SPACEMARKERS {
+  tag "$meta.id"
+  label 'process_single'
   container 'ghcr.io/fertiglab/spacemarkers:0.99.8'
+  
   input:
     tuple val(sample), path(data)
     path 'cogapsResult.rds'
@@ -153,10 +172,18 @@ process SPACEMARKERS {
 
 // }
 
-workflow {
-  Channel.fromPath(params.input)
+workflow COSPACE {
+  def samplesheet = Channel.fromPath(params.input)
     | splitCsv(header:true, sep: ",")
     | map { row-> tuple(meta=[id:row.sample], data=file(row.data_directory)) }
-    | PREPROCESS
+  
+  PREPROCESS(samplesheet)
+
+  ch_pre = PREPROCESS.out.dgCMatrix.map { tuple(it[0], it[1]) }
+  COGAPS(ch_pre)
+
 }
- 
+
+workflow {
+  COSPACE()
+}
