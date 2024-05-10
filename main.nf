@@ -12,9 +12,9 @@ nextflow.enable.dsl=2
 
 // Script parameters
 params.input = ''
-params.npatterns = 2
-params.nsets = 2
-params.niterations = 10
+params.npatterns = 7
+params.nsets = 7
+params.niterations = 100
 params.sparse = 1
 params.seed = 42
 params.distributed = '"genome-wide"'
@@ -42,7 +42,7 @@ process PREPROCESS {
     "${task.process}":
         seurat: \$(Rscript -e 'print(packageVersion("Seurat"))' | awk '{print \$2}')
         R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
-    END_VERSIONS
+  END_VERSIONS
   """
 
   script:
@@ -59,7 +59,7 @@ process PREPROCESS {
     "${task.process}":
         seurat: \$(Rscript -e 'print(packageVersion("Seurat"))' | awk '{print \$2}')
         R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
-    END_VERSIONS
+  END_VERSIONS
   """
 }
 
@@ -89,7 +89,7 @@ process COGAPS {
   mkdir "${prefix}"
 
   Rscript -e 'library("CoGAPS");
-      sparse <- readRDS("dgCMatrix.rds");
+      sparse <- readRDS("$dgCMatrix");
       data <- as.matrix(sparse);
       params <- CogapsParams(seed=42,
                              nIterations = $params.niterations,
@@ -104,86 +104,84 @@ process COGAPS {
     "${task.process}":
         CoGAPS: \$(Rscript -e 'print(packageVersion("CoGAPS"))' | awk '{print \$2}')
         R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
-    END_VERSIONS
+  END_VERSIONS
   """
 }
 
 process SPACEMARKERS {
   tag "$meta.id"
-  label 'process_single'
+  label 'process_medium'
   container 'ghcr.io/fertiglab/spacemarkers:0.99.8'
-  
+
   input:
-    tuple val(sample), path(data)
-    path 'cogapsResult.rds'
+    tuple val(meta), path(cogapsResult), path(data)
   output:
-    path 'spPatterns.rds'
-    path 'optParams.rds'
-    path 'spaceMarkers.rds'
+    tuple val(meta), path("${prefix}/spPatterns.rds"), emit: spPatterns
+    tuple val(meta), path("${prefix}/optParams.rds"), emit: optParams
+    tuple val(meta), path("${prefix}/spaceMarkers.rds"), emit: spaceMarkers
 
   stub:
-  """
-  touch spPatterns.rds
-  touch optParams.rds
-  touch spaceMarkers.rds
+    def args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    mkdir "${prefix}"
+    touch "${prefix}/spPatterns.rds"
+    touch "${prefix}/optParams.rds"
+    touch "${prefix}/spaceMarkers.rds"
+    cat <<-END_VERSIONS > versions.yml
+      "${task.process}":
+          CoGAPS: \$(Rscript -e 'print(packageVersion("CoGAPS"))' | awk '{print \$2}')
+          R: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+    END_VERSIONS
   """
   script:
   """
   Rscript -e 'library("SpaceMarkers");
     dataMatrix <- load10XExpr("$data");
     coords <- load10XCoords("$data");
-    features <- getSpatialFeatures("cogapsResult.rds");
+    features <- getSpatialFeatures("$cogapsResult");
     spPatterns <- cbind(coords, features);
-    saveRDS(spPatterns, file = "spPatterns.rds");
+    saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
 
     #temp fix to remove barcodes with no spatial data
     barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
     dataMatrix <- dataMatrix[,barcodes]
     spPatterns <- spPatterns[barcodes,]
-    message("dim check:", dim(coords), ",", dim(dataMatrix))
 
     optParams <- getSpatialParameters(spPatterns);
-    saveRDS(optParams, file = "optParams.rds");
+    saveRDS(optParams, file = "${prefix}/optParams.rds");
 
     spaceMarkers <- getInteractingGenes(data = dataMatrix, \
                                         optParams = optParams, \
                                         spPatterns = spPatterns, \
                                         refPattern = "Pattern_1", \
                                         mode = "DE", analysis="enrichment");
-    saveRDS(spaceMarkers, file = "spaceMarkers.rds");
+    saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds");
               '
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        CoGAPS: \$(Rscript -e 'print(packageVersion("CoGAPS"))' | awk '{print \$2}')
+        R: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+    END_VERSIONS
   """
 }
 
-// workflow {
-//   def ss=Channel.fromPath(params.input)
-//     | splitCsv(header:true, sep: ",")
-//     | map { row-> tuple(sample=row.sample, data=file(row.data_directory)) }
-//     PREPROCESS(ss)
-//     COGAPS(PREPROCESS.out)
-//     SPACEMARKERS(ss, COGAPS.out)
-// }
-
-// workflow {
-// Channel.fromList([tuple([id: "sample"],
-//         file(params.input))])
-//         | map { tuple(it[0], it[1]) }
-// | PREPROCESS
-
-// }
-
 workflow COSPACE {
-  def samplesheet = Channel.fromPath(params.input)
-    | splitCsv(header:true, sep: ",")
-    | map { row-> tuple(meta=[id:row.sample], data=file(row.data_directory)) }
+  samplesheet = Channel.fromPath(params.input)
+    .splitCsv(header:true, sep: ",")
+    .map { row-> tuple(meta=[id:row.sample], data=file(row.data_directory)) }
   
   PREPROCESS(samplesheet)
 
-  ch_pre = PREPROCESS.out.dgCMatrix.map { tuple(it[0], it[1]) }
-  COGAPS(ch_pre)
+  ch_gaps = PREPROCESS.out.dgCMatrix.map { tuple(it[0], it[1]) }
+  COGAPS(ch_gaps)
 
+  ch_spacemarkers = COGAPS.out.cogapsResult.map { tuple(it[0], it[1]) }
+  .join(samplesheet)
+
+  SPACEMARKERS(ch_spacemarkers)
 }
 
 workflow {
-  COSPACE()
+    COSPACE()
 }
