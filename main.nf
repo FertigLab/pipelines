@@ -13,9 +13,9 @@ nextflow.enable.dsl=2
 
 // Script parameters
 params.input = ''
-params.npatterns = 7
+params.npatterns = 8
 params.nsets = 7
-params.niterations = 100
+params.niterations = 1000
 params.sparse = 1
 params.seed = 42
 params.distributed = '"genome-wide"'
