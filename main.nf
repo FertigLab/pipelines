@@ -74,6 +74,7 @@ process COGAPS {
     tuple val(meta), path(dgCMatrix)
   output:
     tuple val(meta), path("${prefix}/cogapsResult.rds"), emit: cogapsResult
+    path  "versions.yml",                                emit: versions
 
   stub:
   def args = task.ext.args ?: ''
@@ -81,6 +82,11 @@ process COGAPS {
   """
   mkdir "${prefix}"
   touch "${prefix}/cogapsResult.rds"
+  cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        CoGAPS: \$(Rscript -e 'print(packageVersion("CoGAPS"))' | awk '{print \$2}')
+        R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
+  END_VERSIONS
   """
 
   script:
@@ -116,9 +122,10 @@ process SPACEMARKERS {
   input:
     tuple val(meta), path(cogapsResult), path(data)
   output:
-    tuple val(meta), path("${prefix}/spPatterns.rds"), emit: spPatterns
-    tuple val(meta), path("${prefix}/optParams.rds"), emit: optParams
+    tuple val(meta), path("${prefix}/spPatterns.rds"),   emit: spPatterns
+    tuple val(meta), path("${prefix}/optParams.rds"),    emit: optParams
     tuple val(meta), path("${prefix}/spaceMarkers.rds"), emit: spaceMarkers
+    path  "versions.yml",                                emit: versions
 
   stub:
     def args = task.ext.args ?: ''
@@ -170,10 +177,11 @@ process SPACEMARKERS {
 }
 
 workflow COSPACE {
+
   samplesheet = Channel.fromPath(params.input)
     .splitCsv(header:true, sep: ",")
     .map { row-> tuple(meta=[id:row.sample], data=file(row.data_directory)) }
-  
+
   PREPROCESS(samplesheet)
 
   ch_gaps = PREPROCESS.out.dgCMatrix.map { tuple(it[0], it[1]) }
@@ -183,6 +191,15 @@ workflow COSPACE {
   .join(samplesheet)
 
   SPACEMARKERS(ch_spacemarkers)
+
+  emit:
+    dgCMatrix       = PREPROCESS.out.dgCMatrix
+    cogapsResult    = COGAPS.out.cogapsResult
+    spPatterns      = SPACEMARKERS.out.spPatterns
+    optParams       = SPACEMARKERS.out.optParams
+    spaceMarkers    = SPACEMARKERS.out.spaceMarkers
+    versions        = SPACEMARKERS.out.versions
+
 }
 
 workflow {
