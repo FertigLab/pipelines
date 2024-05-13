@@ -1,8 +1,9 @@
 // usage
-// nextflow run main.nf --input ./samplesheet -w wd -resume -profile docker
+// nextflow run main.nf --input ./[samplesheet] -w wd -resume -profile docker
 // make sure wd has really low access requirements for docker to write there 
 
-// export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
+// export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, to ensure ENTRYPOINT is 
+// the /bin/bash command and not anything else that the author has specified
 // to debug inside docker run e.g. 
 // docker run -it \
 //            --rm -v $(pwd):/spacemarkers \
@@ -87,7 +88,6 @@ process COGAPS {
   prefix = task.ext.prefix ?: "${meta.id}"
   """
   mkdir "${prefix}"
-
   Rscript -e 'library("CoGAPS");
       sparse <- readRDS("$dgCMatrix");
       data <- as.matrix(sparse);
@@ -130,40 +130,43 @@ process SPACEMARKERS {
     touch "${prefix}/spaceMarkers.rds"
     cat <<-END_VERSIONS > versions.yml
       "${task.process}":
-          CoGAPS: \$(Rscript -e 'print(packageVersion("CoGAPS"))' | awk '{print \$2}')
-          R: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+          SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+          R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
     END_VERSIONS
   """
   script:
-  """
-  Rscript -e 'library("SpaceMarkers");
-    dataMatrix <- load10XExpr("$data");
-    coords <- load10XCoords("$data");
-    features <- getSpatialFeatures("$cogapsResult");
-    spPatterns <- cbind(coords, features);
-    saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
+    def args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    mkdir "${prefix}"
+    Rscript -e 'library("SpaceMarkers");
+      dataMatrix <- load10XExpr("$data");
+      coords <- load10XCoords("$data");
+      features <- getSpatialFeatures("$cogapsResult");
+      spPatterns <- cbind(coords, features);
+      saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
 
-    #temp fix to remove barcodes with no spatial data
-    barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
-    dataMatrix <- dataMatrix[,barcodes]
-    spPatterns <- spPatterns[barcodes,]
+      #temp fix to remove barcodes with no spatial data
+      barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
+      dataMatrix <- dataMatrix[,barcodes]
+      spPatterns <- spPatterns[barcodes,]
 
-    optParams <- getSpatialParameters(spPatterns);
-    saveRDS(optParams, file = "${prefix}/optParams.rds");
+      optParams <- getSpatialParameters(spPatterns);
+      saveRDS(optParams, file = "${prefix}/optParams.rds");
 
-    spaceMarkers <- getInteractingGenes(data = dataMatrix, \
-                                        optParams = optParams, \
-                                        spPatterns = spPatterns, \
-                                        refPattern = "Pattern_1", \
-                                        mode = "DE", analysis="enrichment");
-    saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds");
-              '
+      spaceMarkers <- getInteractingGenes(data = dataMatrix, \
+                                          optParams = optParams, \
+                                          spPatterns = spPatterns, \
+                                          refPattern = "Pattern_1", \
+                                          mode = "DE", analysis="enrichment");
+      saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds");
+                '
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        CoGAPS: \$(Rscript -e 'print(packageVersion("CoGAPS"))' | awk '{print \$2}')
-        R: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+        SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+        R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
     END_VERSIONS
-  """
+    """
 }
 
 workflow COSPACE {
