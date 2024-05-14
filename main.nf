@@ -1,8 +1,9 @@
 // usage
-// nextflow run main.nf --input ./samplesheet -w wd -resume -profile docker
+// nextflow run main.nf --input ./[samplesheet] -w wd -resume -profile docker
 // make sure wd has really low access requirements for docker to write there 
 
-// export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, trouble is ep is /bin/bash
+// export NXF_CONTAINER_ENTRYPOINT_OVERRIDE=true, to ensure ENTRYPOINT is 
+// the /bin/bash command and not anything else that the author has specified
 // to debug inside docker run e.g. 
 // docker run -it \
 //            --rm -v $(pwd):/spacemarkers \
@@ -10,115 +11,36 @@
 
 nextflow.enable.dsl=2
 
-// Script parameters
-params.input = ''
-params.npatterns = 8
-params.nsets = 7
-params.niterations = 100
-params.sparse = 1
-params.seed = 42
-params.distributed = '"genome-wide"'
+include { PREPROCESS } from './modules/local/preprocess'
+include { SPACEMARKERS } from './modules/local/spacemarkers'
+include { COGAPS } from './modules/local/cogaps'
 
+workflow COSPACE {
 
-process PREPROCESS {
-  container 'docker.io/satijalab/seurat:5.0.0'
+  samplesheet = Channel.fromPath(params.input)
+    .splitCsv(header:true, sep: ",")
+    .map { row-> tuple(meta=[id:row.sample], data=file(row.data_directory)) }
 
-  input:
-      tuple val(sample), path(data) 
-  output:
-      path 'dgCMatrix.rds'
+  PREPROCESS(samplesheet)
 
-  stub:
-  """
-  touch dgCMatrix.rds
-  """
+  ch_gaps = PREPROCESS.out.dgCMatrix.map { tuple(it[0], it[1]) }
+  COGAPS(ch_gaps)
 
-  script:
-  """
-  Rscript -e 'res <- Seurat::Read10X("$data/raw_feature_bc_matrix/");
-              res <- Seurat::NormalizeData(res);
-              saveRDS(res, file="dgCMatrix.rds")';
-  """
-}
+  ch_spacemarkers = COGAPS.out.cogapsResult.map { tuple(it[0], it[1]) }
+  .join(samplesheet)
 
-process COGAPS {
-  container 'ghcr.io/fertiglab/cogaps:3.21.5'
-  cpus = params.nsets
-  input:
-    path 'dgCMatrix.rds'
-  output:
-    path  'cogapsResult.rds'
+  SPACEMARKERS(ch_spacemarkers)
 
-  stub:
-  """
-  touch cogapsResult.rds
-  """
+  emit:
+    dgCMatrix       = PREPROCESS.out.dgCMatrix
+    cogapsResult    = COGAPS.out.cogapsResult
+    spPatterns      = SPACEMARKERS.out.spPatterns
+    optParams       = SPACEMARKERS.out.optParams
+    spaceMarkers    = SPACEMARKERS.out.spaceMarkers
+    versions        = SPACEMARKERS.out.versions
 
-  script:
-  """
-  Rscript -e 'library("CoGAPS");
-      sparse <- readRDS("dgCMatrix.rds");
-      data <- as.matrix(sparse);
-      params <- CogapsParams(seed=42,
-                             nIterations = $params.niterations,
-                             nPatterns = $params.npatterns,
-                             sparseOptimization = as.logical($params.sparse),
-                             distributed=$params.distributed);
-      params <- setDistributedParams(params, nSets = 7);
-      cogapsResult <- CoGAPS(data = data, params = params)
-      saveRDS(cogapsResult, file = "cogapsResult.rds")'
-  """
-}
-
-process SPACEMARKERS {
-  container 'ghcr.io/fertiglab/spacemarkers:0.99.8'
-  input:
-    tuple val(sample), path(data)
-    path 'cogapsResult.rds'
-  output:
-    path 'spPatterns.rds'
-    path 'optParams.rds'
-    path 'spaceMarkers.rds'
-
-  stub:
-  """
-  touch spPatterns.rds
-  touch optParams.rds
-  touch spaceMarkers.rds
-  """
-  script:
-  """
-  Rscript -e 'library("SpaceMarkers");
-    dataMatrix <- load10XExpr("$data");
-    coords <- load10XCoords("$data");
-    features <- getSpatialFeatures("cogapsResult.rds");
-    spPatterns <- cbind(coords, features);
-    saveRDS(spPatterns, file = "spPatterns.rds");
-
-    #temp fix to remove barcodes with no spatial data
-    barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
-    dataMatrix <- dataMatrix[,barcodes]
-    spPatterns <- spPatterns[barcodes,]
-    message("dim check:", dim(coords), ",", dim(dataMatrix))
-
-    optParams <- getSpatialParameters(spPatterns);
-    saveRDS(optParams, file = "optParams.rds");
-
-    spaceMarkers <- getInteractingGenes(data = dataMatrix, \
-                                        optParams = optParams, \
-                                        spPatterns = spPatterns, \
-                                        refPattern = "Pattern_1", \
-                                        mode = "DE", analysis="enrichment");
-    saveRDS(spaceMarkers, file = "spaceMarkers.rds");
-              '
-  """
 }
 
 workflow {
-  def ss=Channel.fromPath(params.input)
-    | splitCsv(header:true, sep: ",")
-    | map { row-> tuple(sample=row.sample, data=file(row.data_directory)) }
-    PREPROCESS(ss)
-    COGAPS(PREPROCESS.out)
-    SPACEMARKERS(ss, COGAPS.out)
+    COSPACE()
 }
