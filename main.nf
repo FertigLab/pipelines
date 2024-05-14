@@ -11,16 +11,6 @@
 
 nextflow.enable.dsl=2
 
-// Script parameters
-params.input = ''
-params.npatterns = 8
-params.nsets = 7
-params.niterations = 1000
-params.sparse = 1
-params.seed = 42
-params.distributed = '"genome-wide"'
-
-
 process PREPROCESS {
   tag "$meta.id"
   label 'process_single'
