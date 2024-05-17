@@ -11,6 +11,10 @@
                     "npatterns": {
                         "type": "integer",
                         "title": "Number of Patterns / Cell Types"
+                    },
+                    "niterations": {
+                        "type": "integer",
+                        "title": "Number NMF Iterations"
                     }
                 }
             }
