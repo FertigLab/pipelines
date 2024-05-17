@@ -1,8 +1,7 @@
 process COGAPS {
   tag "$meta.id"
-  label 'process_long'
+  label 'process_medium'
   container 'ghcr.io/fertiglab/cogaps:3.21.5'
-  cpus = params.nsets
 
   input:
     tuple val(meta), path(dgCMatrix)
