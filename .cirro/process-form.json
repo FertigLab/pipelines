@@ -1,0 +1,19 @@
+{
+    "ui": {},
+    "form": {
+        "title": "BTC CO-SPACE spatial transcriptomics",
+        "type": "object",
+        "properties": {
+            "pipeline_parameters": {
+                "title": "Pipeline parameters",
+                "type": "object",
+                "properties": {
+                    "npatterns": {
+                        "type": "integer",
+                        "title": "Number of Patterns / Cell Types"
+                    }
+                }
+            }
+        }
+    }
+}

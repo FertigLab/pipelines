@@ -1,0 +1,6 @@
+{
+    "sample": "sample",
+    "outdir": "$.params.dataset.s3|/data/",
+    "npatterns": "$.params.dataset.paramJson.pipeline_parameters.npatterns",
+    "niterations": "$.params.dataset.paramJson.pipeline_parameters.niterations"
+}
