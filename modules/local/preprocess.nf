@@ -1,6 +1,6 @@
 process PREPROCESS {
   tag "$meta.id"
-  label 'process_medium'
+  label 'process_low'
   container 'docker.io/satijalab/seurat:5.0.0'
 
   input:
