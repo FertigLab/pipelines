@@ -1,7 +1,7 @@
 process SPACEMARKERS {
   tag "$meta.id"
   label 'process_medium'
-  container 'ghcr.io/fertiglab/spacemarkers:0.99.8'
+  container 'ghcr.io/fertiglab/spacemarkers:0.99.8.1'
 
   input:
     tuple val(meta), path(cogapsResult), path(data)
