@@ -9,3 +9,6 @@ nextflow run main.nf --input ./[samplesheet] -w [workdir] -profile docker
 ```
 
 Other running options - check out profiles in [nextflow.config](samplesheet.csv).
+
+>[!TIP]
+>Use `--max_memory --max_cpus --max_time` to control the maximum resources to grant on the host.
