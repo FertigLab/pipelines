@@ -37,8 +37,10 @@ process SPACEMARKERS {
       dataMatrix <- dataMatrix[keepGenes,]
       
       coords <- load10XCoords("$data");
+      rownames(coords) <- coords$barcode;
       features <- getSpatialFeatures("$cogapsResult");
-      spPatterns <- cbind(coords, features);
+      barcodes <- intersect(rownames(features), rownames(coords))
+      spPatterns <- cbind(coords[barcodes,], features[barcodes,]);
       
       saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
 
