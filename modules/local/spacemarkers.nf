@@ -31,24 +31,18 @@ process SPACEMARKERS {
     """
     mkdir "${prefix}"
     Rscript -e 'library("SpaceMarkers");
+      #load expression data, filter out genes with arbitrarly low expression
       dataMatrix <- load10XExpr("$data");
-      keepGenes <- rownames(dataMatrix);
-      keepGenes <- keepGenes[which(apply(dataMatrix,1,sum) > 10)];
+      keepGenes <- rownames(dataMatrix)[which(apply(dataMatrix, 1, sum)>10)];
       dataMatrix <- dataMatrix[keepGenes,]
       
-      coords <- load10XCoords("$data");
-      rownames(coords) <- coords$barcode;
-      features <- getSpatialFeatures("$cogapsResult");
-      barcodes <- intersect(rownames(features), rownames(coords))
-      spPatterns <- cbind(coords[barcodes,], features[barcodes,]);
-      
+      #load spatial coordinates from tissue positions
+      coords <- load10XCoords(data);
+      features <- getSpatialFeatures(cogapsresult);
+      spPatterns <- merge(coords, features, by.x = "barcode", by.y = "row.names");
       saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
 
-      #temp fix to remove barcodes with no spatial data
-      barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
-      dataMatrix <- dataMatrix[keepGenes, barcodes]
-      spPatterns <- spPatterns[barcodes,]
-
+      #compute optimal parameters for spatial patterns
       optParams <- getSpatialParameters(spPatterns);
       saveRDS(optParams, file = "${prefix}/optParams.rds");
 
