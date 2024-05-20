@@ -32,7 +32,6 @@ process SPACEMARKERS {
     mkdir "${prefix}"
     Rscript -e 'library("SpaceMarkers");
       dataMatrix <- load10XExpr("$data");
-      
       keepGenes <- rownames(dataMatrix);
       keepGenes <- keepGenes[which(apply(dataMatrix,1,sum) > 10)];
       dataMatrix <- dataMatrix[keepGenes,]
@@ -40,6 +39,7 @@ process SPACEMARKERS {
       coords <- load10XCoords("$data");
       features <- getSpatialFeatures("$cogapsResult");
       spPatterns <- cbind(coords, features);
+      
       saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
 
       #temp fix to remove barcodes with no spatial data
