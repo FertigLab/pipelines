@@ -40,7 +40,7 @@ process SPACEMARKERS {
       #load expression data, rm low expression genes, rm barcodes w/o spatial
       dataMatrix <- load10XExpr("$data");
       keepGenes <- which(apply(dataMatrix, 1, sum) > 10);
-      keepBarcodes <- which(colnames(dataMatrix) %in% spPatterns$barcode);
+      keepBarcodes <- which(colnames(dataMatrix) %in% spPatterns["barcode"]);
       dataMatrix <- dataMatrix[keepGenes, keepBarcodes];
       
       #compute optimal parameters for spatial patterns
