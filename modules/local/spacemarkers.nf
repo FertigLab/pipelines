@@ -32,6 +32,7 @@ process SPACEMARKERS {
     mkdir "${prefix}"
     Rscript -e 'library("SpaceMarkers");
       dataMatrix <- load10XExpr("$data");
+      keepGenes <- rownames(dataMatrix)[which(rowSums(dataMatrix) > 10)];
       coords <- load10XCoords("$data");
       features <- getSpatialFeatures("$cogapsResult");
       spPatterns <- cbind(coords, features);
@@ -39,7 +40,7 @@ process SPACEMARKERS {
 
       #temp fix to remove barcodes with no spatial data
       barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
-      dataMatrix <- dataMatrix[,barcodes]
+      dataMatrix <- dataMatrix[keepGenes,barcodes]
       spPatterns <- spPatterns[barcodes,]
 
       optParams <- getSpatialParameters(spPatterns);
