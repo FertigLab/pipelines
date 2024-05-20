@@ -31,17 +31,18 @@ process SPACEMARKERS {
     """
     mkdir "${prefix}"
     Rscript -e 'library("SpaceMarkers");
-      #load expression data, filter out genes with arbitrarly low expression
-      dataMatrix <- load10XExpr("$data");
-      keepGenes <- rownames(dataMatrix)[which(apply(dataMatrix, 1, sum)>10)];
-      dataMatrix <- dataMatrix[keepGenes,]
-      
       #load spatial coordinates from tissue positions
-      coords <- load10XCoords(data);
-      features <- getSpatialFeatures(cogapsresult);
+      coords <- load10XCoords("$data");
+      features <- getSpatialFeatures("$cogapsResult");
       spPatterns <- merge(coords, features, by.x = "barcode", by.y = "row.names");
       saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
 
+      #load expression data, rm low expression genes, rm barcodes w/o spatial
+      dataMatrix <- load10XExpr("$data");
+      keepGenes <- which(apply(dataMatrix, 1, sum) > 10);
+      keepBarcodes <- which(colnames(dataMatrix) %in% spPatterns$barcode);
+      dataMatrix <- dataMatrix[keepGenes, keepBarcodes];
+      
       #compute optimal parameters for spatial patterns
       optParams <- getSpatialParameters(spPatterns);
       saveRDS(optParams, file = "${prefix}/optParams.rds");
