@@ -31,20 +31,26 @@ process SPACEMARKERS {
     """
     mkdir "${prefix}"
     Rscript -e 'library("SpaceMarkers");
-      dataMatrix <- load10XExpr("$data");
-      coords <- load10XCoords("$data");
-      features <- getSpatialFeatures("$cogapsResult");
-      spPatterns <- cbind(coords, features);
+      #load spatial coords from tissue positions, deconvolved patterns, and expression
+      coords <- load10XCoords("$data")
+      features <- getSpatialFeatures("$cogapsResult")
+      dataMatrix <- load10XExpr("$data")
+
+      #add spatial coordinates to deconvolved data, only use barcodes present in data
+      spPatterns <- merge(coords, features, by.x = "barcode", by.y = "row.names")
+      spPatterns <- spPatterns[which(spPatterns[,"barcode"] %in% colnames(dataMatrix)),]
       saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
 
-      #temp fix to remove barcodes with no spatial data
-      barcodes <- intersect(rownames(spPatterns), colnames(dataMatrix))
-      dataMatrix <- dataMatrix[,barcodes]
-      spPatterns <- spPatterns[barcodes,]
+      #remove genes with low expression, only barcodes present in spatial data
+      keepGenes <- which(apply(dataMatrix, 1, sum) > 10)
+      keepBarcodes <- which(colnames(dataMatrix) %in% spPatterns[,"barcode"])
+      dataMatrix <- dataMatrix[keepGenes, keepBarcodes]
 
+      #compute optimal parameters for spatial patterns
       optParams <- getSpatialParameters(spPatterns);
       saveRDS(optParams, file = "${prefix}/optParams.rds");
 
+      #find genes that are differentially expressed in spatial patterns
       spaceMarkers <- getInteractingGenes(data = dataMatrix, \
                                           optParams = optParams, \
                                           spPatterns = spPatterns, \
