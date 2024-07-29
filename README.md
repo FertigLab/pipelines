@@ -5,7 +5,7 @@ Run CoGAPS followed by SpaceMarkers to find spatially interacting genes in Visiu
 Locally with docker installed (see [samplesheet.csv](samplesheet.csv) for reference):
 
 ```
-nextflow run main.nf --input [samplesheet] -w [workdir] -profile docker
+nextflow run FertigLab/spatial-pipeline --input [samplesheet] -w [workdir] -profile docker -r main
 ```
 
 Other running options - check out profiles in [nextflow.config](nextflow.config).
