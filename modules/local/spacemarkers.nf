@@ -1,7 +1,7 @@
 process SPACEMARKERS {
   tag "$meta.id"
   label 'process_medium'
-  container 'ghcr.io/fertiglab/spacemarkers:1.1.1'
+  container 'ghcr.io/fertiglab/spacemarkers:1.1.2.3'
 
   input:
     tuple val(meta), path(cogapsResult), path(data)
@@ -51,11 +51,12 @@ process SPACEMARKERS {
       saveRDS(optParams, file = "${prefix}/optParams.rds");
 
       #find genes that are differentially expressed in spatial patterns
-      spaceMarkers <- getInteractingGenes(data = dataMatrix, \
-                                          optParams = optParams, \
-                                          spPatterns = spPatterns, \
-                                          refPattern = "Pattern_1", \
-                                          mode = "DE", analysis="enrichment");
+      spaceMarkers <- getPairwiseInteractingGenes(data = dataMatrix, \
+                                                  optParams = optParams, \
+                                                  spPatterns = spPatterns, \
+                                                  mode = "DE", \
+                                                  analysis="enrichment"));
+
       saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds");
                 '
     cat <<-END_VERSIONS > versions.yml
