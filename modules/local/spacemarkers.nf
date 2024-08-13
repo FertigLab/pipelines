@@ -55,7 +55,7 @@ process SPACEMARKERS {
                                                   optParams = optParams, \
                                                   spPatterns = spPatterns, \
                                                   mode = "DE", \
-                                                  analysis="enrichment"));
+                                                  analysis="enrichment");
 
       saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds");
                 '
