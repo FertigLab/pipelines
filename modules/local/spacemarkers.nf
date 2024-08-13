@@ -1,6 +1,6 @@
 process SPACEMARKERS {
   tag "$meta.id"
-  label 'process_medium'
+  label 'process_high_memory'
   container 'ghcr.io/fertiglab/spacemarkers:1.1.2.3'
 
   input:
