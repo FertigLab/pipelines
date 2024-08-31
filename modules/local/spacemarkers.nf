@@ -111,7 +111,7 @@ process SPACEMARKERS_MQC {
     }))
 
     #average percent overlap across interacting patterns
-    avg_hot_share_in_pair <- mean(sapply(smi, function(x) {
+    avg_hotspot_area <- mean(sapply(smi, function(x) {
       sum(!is.na(x[['hotspots']]))/length(x[['hotspots']][,1])
     }))
 
