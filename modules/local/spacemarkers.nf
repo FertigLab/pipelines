@@ -66,3 +66,97 @@ process SPACEMARKERS {
     END_VERSIONS
     """
 }
+
+process SPACEMARKERS_MQC {
+  tag "$meta.id"
+  label 'process_low'
+  container 'ghcr.io/fertiglab/spacemarkers:1.1.2.3'
+
+  input:
+    tuple val(meta), path(spaceMarkers)
+  output:
+    tuple val(meta), path("${prefix}/spacemarkers_mqc.csv"), emit: spacemarkers_mqc
+    path  "versions.yml",                                    emit: versions
+
+  script:
+    def args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    #!/usr/bin/env Rscript
+    dir.create("${prefix}", showWarnings = FALSE)
+
+    sm <- readRDS("$spaceMarkers")
+    smi <- sm[which(sapply(sm, function(x) length(x$interacting_genes))>0)]
+
+    #interacting patterns stats
+    n_pairs_total <- length(sm$pattern)
+    n_pairs_interact <- length(smi)
+
+    #spacemarker metric
+    max_spacemarker_metric <- max(sapply(smi, function(x) {
+      max(x$interacting_genes[[1]]$SpaceMarkersMetric)
+    }))
+    min_spacemarker_metric <- min(sapply(smi, function(x) {
+      min(x$interacting_genes[[1]]$SpaceMarkersMetric)
+    }))
+
+    #average number of genes in each pair
+    avg_genes_in_pair <- mean(sapply(smi, function(x) {
+      length(x$interacting_genes[[1]]$Gene)
+    }))
+
+    #average percent overlap across patterns
+    avg_hot_share_in_pair <- mean(sapply(smi, function(x) {
+      sum(!is.na(x$hotspots))/length(x$hotspots[,1])
+    }))
+
+    #report
+    report_data <- list(
+      "${prefix}" = list(
+        n_pairs_total = n_pairs_total,
+        n_pairs_interact = n_pairs_interact,
+        max_spacemarker_metric = max_spacemarker_metric,
+        min_spacemarker_metric = min_spacemarker_metric,
+        avg_genes_in_pair = avg_genes_in_pair,
+        avg_hotspot_area = avg_hotspot_area
+      )
+    )
+
+    report <- list(
+        id = "spacemarkers_mqc",
+        section_name = "SpaceMarkers",
+        description = "Stats for the spacemarkers run.",
+        plot_type = "table",
+        pconfig = list(
+            id = "custom_data_table",
+            title = "SpacemMarkers Stats",
+            xDecimals = 2
+            ),
+        data = report_data
+    )
+    jsonlite::write_json(
+              x=report, 
+              path = "${prefix}/spacemarkers_mqc.json", 
+              auto_unbox = TRUE, 
+              pretty = TRUE)
+    
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+        R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
+    END_VERSIONS
+    """
+
+    stub:
+    def args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    mkdir "${prefix}"
+    touch "${prefix}/spacemarkers_mqc.json"
+    cat <<-END_VERSIONS > versions.yml
+      "${task.process}":
+          SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+          R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
+    END_VERSIONS
+    """
+}
