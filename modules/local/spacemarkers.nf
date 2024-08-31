@@ -29,36 +29,38 @@ process SPACEMARKERS {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    mkdir "${prefix}"
-    Rscript -e 'library("SpaceMarkers");
-      #load spatial coords from tissue positions, deconvolved patterns, and expression
-      coords <- load10XCoords("$data")
-      features <- getSpatialFeatures("$cogapsResult")
-      dataMatrix <- load10XExpr("$data")
+    #!/usr/bin/env Rscript
+    dir.create("${prefix}", showWarnings = FALSE)
+    library("SpaceMarkers")
+    
+    #load spatial coords from tissue positions, deconvolved patterns, and expression
+    coords <- load10XCoords("$data")
+    features <- getSpatialFeatures("$cogapsResult")
+    dataMatrix <- load10XExpr("$data")
 
-      #add spatial coordinates to deconvolved data, only use barcodes present in data
-      spPatterns <- merge(coords, features, by.x = "barcode", by.y = "row.names")
-      spPatterns <- spPatterns[which(spPatterns[,"barcode"] %in% colnames(dataMatrix)),]
-      saveRDS(spPatterns, file = "${prefix}/spPatterns.rds");
+    #add spatial coordinates to deconvolved data, only use barcodes present in data
+    spPatterns <- merge(coords, features, by.x = "barcode", by.y = "row.names")
+    spPatterns <- spPatterns[which(spPatterns[,"barcode"] %in% colnames(dataMatrix)),]
+    saveRDS(spPatterns, file = "${prefix}/spPatterns.rds")
 
-      #remove genes with low expression, only barcodes present in spatial data
-      keepGenes <- which(apply(dataMatrix, 1, sum) > 10)
-      keepBarcodes <- which(colnames(dataMatrix) %in% spPatterns[,"barcode"])
-      dataMatrix <- dataMatrix[keepGenes, keepBarcodes]
+    #remove genes with low expression, only barcodes present in spatial data
+    keepGenes <- which(apply(dataMatrix, 1, sum) > 10)
+    keepBarcodes <- which(colnames(dataMatrix) %in% spPatterns[,"barcode"])
+    dataMatrix <- dataMatrix[keepGenes, keepBarcodes]
 
-      #compute optimal parameters for spatial patterns
-      optParams <- getSpatialParameters(spPatterns);
-      saveRDS(optParams, file = "${prefix}/optParams.rds");
+    #compute optimal parameters for spatial patterns
+    optParams <- getSpatialParameters(spPatterns);
+    saveRDS(optParams, file = "${prefix}/optParams.rds")
 
-      #find genes that are differentially expressed in spatial patterns
-      spaceMarkers <- getPairwiseInteractingGenes(data = dataMatrix, \
-                                                  optParams = optParams, \
-                                                  spPatterns = spPatterns, \
-                                                  mode = "DE", \
-                                                  analysis="enrichment");
+    #find genes that are differentially expressed in spatial patterns
+    spaceMarkers <- getPairwiseInteractingGenes(data = dataMatrix,
+                                                  optParams = optParams,
+                                                  spPatterns = spPatterns,
+                                                  mode = "DE",
+                                                  analysis="enrichment")
 
-      saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds");
-                '
+    saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds")
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
