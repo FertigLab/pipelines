@@ -77,7 +77,7 @@ process SPACEMARKERS_MQC {
   input:
     tuple val(meta), path(spaceMarkers)
   output:
-    tuple val(meta), path("${prefix}/spacemarkers_mqc.csv"), emit: spacemarkers_mqc
+    tuple val(meta), path("${prefix}/spacemarkers_mqc.json"), emit: spacemarkers_mqc
     path  "versions.yml",                                    emit: versions
 
   script:
