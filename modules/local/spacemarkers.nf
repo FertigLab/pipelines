@@ -61,11 +61,12 @@ process SPACEMARKERS {
 
     saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds")
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
-        R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
-    END_VERSIONS
+    # Get the versions of the packages
+    spaceMarkersVersion <- packageVersion("SpaceMarkers")
+    rVersion <- packageVersion("base")
+    cat(sprintf('"%s":\n  SpaceMarkers: %s\n  R: %s\n', 
+            "${task.process}", spaceMarkersVersion, rVersion), 
+        file = "versions.yml")
     """
 }
 
@@ -142,11 +143,12 @@ process SPACEMARKERS_MQC {
               auto_unbox = TRUE, 
               pretty = TRUE)
     
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
-        R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
-    END_VERSIONS
+    # Get the versions of the packages
+    spaceMarkersVersion <- packageVersion("SpaceMarkers")
+    rVersion <- packageVersion("base")
+    cat(sprintf('"%s":\n  SpaceMarkers: %s\n  R: %s\n', 
+            "${task.process}", spaceMarkersVersion, rVersion), 
+        file = "versions.yml")
     """
 
     stub:
