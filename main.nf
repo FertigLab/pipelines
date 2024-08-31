@@ -1,9 +1,11 @@
 nextflow.enable.dsl=2
 
-include { PREPROCESS } from './modules/local/preprocess'
-include { SPACEMARKERS } from './modules/local/spacemarkers'
-include { COGAPS } from './modules/local/cogaps'
-include { SPACEMARKERS_MQC } from './modules/local/spacemakers'
+include { PREPROCESS } from './modules/local/preprocess.nf'
+include { SPACEMARKERS } from './modules/local/spacemarkers.nf'
+include { COGAPS } from './modules/local/cogaps.nf'
+include { SPACEMARKERS_MQC } from './modules/local/spacemarkers.nf'
+
+
 
 workflow COSPACE {
 
