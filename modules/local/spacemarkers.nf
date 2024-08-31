@@ -88,29 +88,31 @@ process SPACEMARKERS_MQC {
     #!/usr/bin/env Rscript
     dir.create("${prefix}", showWarnings = FALSE)
 
+    #[['']] notation needed to allow nextflow var susbtitution
+
     sm <- readRDS("$spaceMarkers")
-    smi <- sm[which(sapply(sm, function(x) length(x$interacting_genes))>0)]
+    smi <- sm[which(sapply(sm, function(x) length(x[['interacting_genes']]))>0)]
 
     #interacting patterns stats
-    n_pairs_total <- length(sm$pattern)
+    n_pairs_total <- length(sm)
     n_pairs_interact <- length(smi)
 
     #spacemarker metric
     max_spacemarker_metric <- max(sapply(smi, function(x) {
-      max(x$interacting_genes[[1]]$SpaceMarkersMetric)
+      max(x[['interacting_genes']][[1]][['SpaceMarkersMetric']])
     }))
     min_spacemarker_metric <- min(sapply(smi, function(x) {
-      min(x$interacting_genes[[1]]$SpaceMarkersMetric)
+      min(x[['interacting_genes']][[1]][['SpaceMarkersMetric']])
     }))
 
     #average number of genes in each pair
     avg_genes_in_pair <- mean(sapply(smi, function(x) {
-      length(x$interacting_genes[[1]]$Gene)
+      length(x[['interacting_genes']][[1]][['Gene']])
     }))
 
-    #average percent overlap across patterns
+    #average percent overlap across interacting patterns
     avg_hot_share_in_pair <- mean(sapply(smi, function(x) {
-      sum(!is.na(x$hotspots))/length(x$hotspots[,1])
+      sum(!is.na(x[['hotspots']]))/length(x[['hotspots']][,1])
     }))
 
     #report
