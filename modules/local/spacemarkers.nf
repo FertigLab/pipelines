@@ -134,8 +134,7 @@ process SPACEMARKERS_MQC {
         plot_type = "table",
         pconfig = list(
             id = "custom_data_table",
-            title = "SpacemMarkers Stats",
-            xDecimals = 2
+            title = "SpacemMarkers Stats"
             ),
         data = report_data
     )
