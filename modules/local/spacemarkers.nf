@@ -79,7 +79,7 @@ process SPACEMARKERS_MQC {
     tuple val(meta), path(spaceMarkers)
   output:
     tuple val(meta), path("${prefix}/spacemarkers_mqc.json"), emit: spacemarkers_mqc
-    path  "versions.yml",                                    emit: versions
+    path  "versions.yml",                                     emit: versions
 
   script:
     def args = task.ext.args ?: ''
@@ -106,8 +106,13 @@ process SPACEMARKERS_MQC {
     }))
 
     #average number of genes in each pair
-    avg_genes_in_pair <- mean(sapply(smi, function(x) {
-      length(x[['interacting_genes']][[1]][['Gene']])
+    min_genes <- min(sapply(smi, function(x) {
+      nrow(x[['interacting_genes']][[1]])
+    }))
+
+    #average number of genes in each pair
+    max_genes <- max(sapply(smi, function(x) {
+      nrow(x[['interacting_genes']][[1]])
     }))
 
     #average percent overlap across interacting patterns
@@ -122,7 +127,8 @@ process SPACEMARKERS_MQC {
         n_pairs_interact = n_pairs_interact,
         max_spacemarker_metric = max_spacemarker_metric,
         min_spacemarker_metric = min_spacemarker_metric,
-        avg_genes_in_pair = avg_genes_in_pair,
+        min_genes = min_genes,
+        max_genes = max_genes,
         avg_hotspot_area = avg_hotspot_area
       )
     )
@@ -165,3 +171,4 @@ process SPACEMARKERS_MQC {
     END_VERSIONS
     """
 }
+
