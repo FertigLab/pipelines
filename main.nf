@@ -1,11 +1,10 @@
 nextflow.enable.dsl=2
 
 include { PREPROCESS } from './modules/local/preprocess.nf'
-include { SPACEMARKERS } from './modules/local/spacemarkers.nf'
 include { COGAPS } from './modules/local/cogaps.nf'
-include { SPACEMARKERS_MQC } from './modules/local/spacemarkers.nf'
-
-
+include { SPACEMARKERS; 
+          SPACEMARKERS_MQC;
+          SPACEMARKERS_IMSCORES } from './modules/local/spacemarkers.nf'
 
 workflow COSPACE {
 
@@ -25,6 +24,9 @@ workflow COSPACE {
 
   ch_spacemarkers_mqc = SPACEMARKERS.out.spaceMarkers.map { tuple(it[0], it[1]) }
   SPACEMARKERS_MQC(ch_spacemarkers_mqc)
+
+  ch_spacemarkers_imscores = SPACEMARKERS.out.spaceMarkers.map { tuple(it[0], it[1]) }
+  SPACEMARKERS_IMSCORES(ch_spacemarkers_imscores)
 
   emit:
     dgCMatrix       = PREPROCESS.out.dgCMatrix
