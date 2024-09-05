@@ -172,3 +172,61 @@ process SPACEMARKERS_MQC {
     """
 }
 
+process SPACEMARKERS_IMSCORES {
+  tag "$meta.id"
+  label 'process_low'
+  container 'ghcr.io/fertiglab/spacemarkers:1.1.2.3'
+
+  input:
+    tuple val(meta), path(spaceMarkers)
+  output:
+    tuple val(meta), path("${prefix}/imscores.csv"), emit: spacemarkers_imscores
+    path  "versions.yml",                            emit: versions
+
+  script:
+    def args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    #!/usr/bin/env Rscript
+    dir.create("${prefix}", showWarnings = FALSE)
+
+    sm <- readRDS("$spaceMarkers")
+    smi <- sm[which(sapply(sm, function(x) length(x[['interacting_genes']]))>0)]
+  
+    fields <- c('Gene', 'SpaceMarkersMetric')
+
+    imscores <- lapply(seq_along(smi), function(x) {
+        df <- smi[[x]][['interacting_genes']][[1]][,fields]
+        #rename to metric to its parent item name
+        setNames(df, c('Gene', names(smi)[x]))
+    })
+
+    imscores <- Reduce(function(x, y) {
+                merge(x, y, by="Gene", all=TRUE)
+            }, x=imscores, right=FALSE)
+    
+    if(is.null(imscores)) {
+        imscores <- data.frame(Gene=character(0))
+    }
+  
+    write.csv(imscores, file = "${prefix}/imscores.csv", row.names = FALSE)
+
+    # Get the versions of the packages
+    spaceMarkersVersion <- packageVersion("SpaceMarkers")
+    rVersion <- packageVersion("base")
+    cat(sprintf('"%s":\n  SpaceMarkers: %s\n  R: %s\n', 
+            "${task.process}", spaceMarkersVersion, rVersion), 
+        file = "versions.yml")
+    """
+
+    stub:
+    def args = task.ext.args ?: ''
+    prefix = task.ext.prefix ?: "${meta.id}"
+    """
+    mkdir "${prefix}"
+    touch "${prefix}/imscores.csv"
+    cat <<-END_VERSIONS > versions.yml
+      "${task.process}":
+          SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
+          R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
+}
