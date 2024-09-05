@@ -36,7 +36,7 @@ workflow COSPACE {
     spaceMarkers    = SPACEMARKERS.out.spaceMarkers
     versions        = SPACEMARKERS.out.versions
     spacemarkers_mqc = SPACEMARKERS_MQC.out.spacemarkers_mqc
-
+    spacemarkers_imscores = SPACEMARKERS_IMSCORES.out.spacemarkers_imscores
 }
 
 workflow {
