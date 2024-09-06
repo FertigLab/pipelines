@@ -24,7 +24,7 @@ process SPACEMARKERS {
           SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
           R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
     END_VERSIONS
-  """
+    """
   script:
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
@@ -229,4 +229,6 @@ process SPACEMARKERS_IMSCORES {
       "${task.process}":
           SpaceMarkers: \$(Rscript -e 'print(packageVersion("SpaceMarkers"))' | awk '{print \$2}')
           R: \$(Rscript -e 'print(packageVersion("base"))' | awk '{print \$2}')
+    END_VERSIONS
+    """
 }
