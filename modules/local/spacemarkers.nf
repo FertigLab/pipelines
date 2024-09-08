@@ -123,20 +123,18 @@ process SPACEMARKERS_MQC {
     #report
     report_data <- list(
       "${prefix}" = list(
-        n_pairs_total = n_pairs_total,
-        n_pairs_interact = n_pairs_interact,
-        max_spacemarker_metric = max_spacemarker_metric,
-        min_spacemarker_metric = min_spacemarker_metric,
-        min_genes = min_genes,
-        max_genes = max_genes,
-        avg_hotspot_area = avg_hotspot_area
+        'Pairs Total' = n_pairs_total,
+        'Pairs Interact' = n_pairs_interact,
+        'SpaceMarker Metric' = sprintf('%0.1f - %0.1f', min_spacemarker_metric, max_spacemarker_metric),
+        'Gene Count' = sprintf('%0.f - %0.f', min_genes, max_genes),
+        'Mean Hotspot Area' = avg_hotspot_area
       )
     )
 
     report <- list(
         id = "spacemarkers_mqc",
         section_name = "SpaceMarkers",
-        description = "Stats for the spacemarkers run.",
+        description = "Tool to identify genes associated with latent space interactions in spatial transcriptomics.",
         plot_type = "table",
         pconfig = list(
             id = "custom_data_table",
