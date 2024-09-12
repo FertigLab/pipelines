@@ -1,7 +1,7 @@
 process SPACEMARKERS {
   tag "$meta.id"
   label 'process_high_memory'
-  container 'ghcr.io/deshpandelab/spacemarkers:sha256-2860bdf5c3b7afaac12237414fcc25b6942695faf27610535a2364d2e5e81fee'
+  container 'ghcr.io/deshpandelab/spacemarkers:main'
 
   input:
     tuple val(meta), path(cogapsResult), path(data)
@@ -73,7 +73,7 @@ process SPACEMARKERS {
 process SPACEMARKERS_MQC {
   tag "$meta.id"
   label 'process_low'
-  container 'ghcr.io/deshpandelab/spacemarkers:sha256-2860bdf5c3b7afaac12237414fcc25b6942695faf27610535a2364d2e5e81fee'
+  container 'ghcr.io/deshpandelab/spacemarkers:main'
 
   input:
     tuple val(meta), path(spaceMarkers)
@@ -173,7 +173,7 @@ process SPACEMARKERS_MQC {
 process SPACEMARKERS_IMSCORES {
   tag "$meta.id"
   label 'process_low'
-  container 'ghcr.io/deshpandelab/spacemarkers:sha256-2860bdf5c3b7afaac12237414fcc25b6942695faf27610535a2364d2e5e81fee'
+  container 'ghcr.io/deshpandelab/spacemarkers:main'
 
   input:
     tuple val(meta), path(spaceMarkers)
