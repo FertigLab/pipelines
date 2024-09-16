@@ -90,6 +90,15 @@ process SPACEMARKERS_MQC {
 
     #[['']] notation needed to allow nextflow var susbtitution
 
+    #init all report variables
+    n_pairs_total <- NA
+    n_pairs_interact <- NA
+    min_spacemarker_metric <- NA
+    max_spacemarker_metric <- NA
+    min_genes <- NA
+    max_genes <- NA
+    avg_hotspot_area <- NA
+
     sm <- readRDS("$spaceMarkers")
     smi <- sm[which(sapply(sm, function(x) length(x[['interacting_genes']]))>0)]
 
@@ -97,28 +106,30 @@ process SPACEMARKERS_MQC {
     n_pairs_total <- length(sm)
     n_pairs_interact <- length(smi)
 
-    #spacemarker metric
-    max_spacemarker_metric <- max(sapply(smi, function(x) {
-      max(x[['interacting_genes']][[1]][['SpaceMarkersMetric']])
-    }))
-    min_spacemarker_metric <- min(sapply(smi, function(x) {
-      min(x[['interacting_genes']][[1]][['SpaceMarkersMetric']])
-    }))
+    if(n_pairs_interact >0 ) {
+      #spacemarker metric
+      max_spacemarker_metric <- max(sapply(smi, function(x) {
+        max(x[['interacting_genes']][[1]][['SpaceMarkersMetric']])
+      }))
+      min_spacemarker_metric <- min(sapply(smi, function(x) {
+        min(x[['interacting_genes']][[1]][['SpaceMarkersMetric']])
+      }))
 
-    #average number of genes in each pair
-    min_genes <- min(sapply(smi, function(x) {
-      nrow(x[['interacting_genes']][[1]])
-    }))
+      #average number of genes in each pair
+      min_genes <- min(sapply(smi, function(x) {
+        nrow(x[['interacting_genes']][[1]])
+      }))
 
-    #average number of genes in each pair
-    max_genes <- max(sapply(smi, function(x) {
-      nrow(x[['interacting_genes']][[1]])
-    }))
+      #average number of genes in each pair
+      max_genes <- max(sapply(smi, function(x) {
+        nrow(x[['interacting_genes']][[1]])
+      }))
 
-    #average percent overlap across interacting patterns
-    avg_hotspot_area <- mean(sapply(smi, function(x) {
-      sum(!is.na(x[['hotspots']]))/length(x[['hotspots']][,1])
-    }))
+      #average percent overlap across interacting patterns
+      avg_hotspot_area <- mean(sapply(smi, function(x) {
+        sum(!is.na(x[['hotspots']]))/length(x[['hotspots']][,1])
+      }))
+    }
 
     #report
     report_data <- list(
