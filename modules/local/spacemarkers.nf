@@ -1,7 +1,7 @@
 process SPACEMARKERS {
   tag "$meta.id"
   label 'process_high_memory'
-  container 'ghcr.io/deshpandelab/spacemarkers@sha256:6357fa4be041ef321ac983df45485c8cb25197ff787110f7562ec10116a39692'
+  container 'ghcr.io/deshpandelab/spacemarkers:devel'
 
   input:
     tuple val(meta), path(cogapsResult), path(data)
@@ -57,7 +57,8 @@ process SPACEMARKERS {
                                                   optParams = optParams,
                                                   spPatterns = spPatterns,
                                                   mode = "DE",
-                                                  analysis="enrichment")
+                                                  analysis="enrichment",
+					          workers=$task.cpus)
 
     saveRDS(spaceMarkers, file = "${prefix}/spaceMarkers.rds")
 
@@ -73,7 +74,7 @@ process SPACEMARKERS {
 process SPACEMARKERS_MQC {
   tag "$meta.id"
   label 'process_low'
-  container 'ghcr.io/deshpandelab/spacemarkers@sha256:6357fa4be041ef321ac983df45485c8cb25197ff787110f7562ec10116a39692'
+  container 'ghcr.io/deshpandelab/spacemarkers:devel'
 
   input:
     tuple val(meta), path(spaceMarkers)
@@ -173,7 +174,7 @@ process SPACEMARKERS_MQC {
 process SPACEMARKERS_IMSCORES {
   tag "$meta.id"
   label 'process_low'
-  container 'ghcr.io/deshpandelab/spacemarkers@sha256:6357fa4be041ef321ac983df45485c8cb25197ff787110f7562ec10116a39692'
+  container 'ghcr.io/deshpandelab/spacemarkers:devel'
 
   input:
     tuple val(meta), path(spaceMarkers)
