@@ -1,7 +1,7 @@
 process COGAPS {
   tag "$meta.id"
   label 'process_medium'
-  container 'ghcr.io/fertiglab/cogaps:3.21.5'
+  container 'ghcr.io/fertiglab/cogaps@sha256:ce86acbf8677e6ac1dbfcbdb4ccb1fbd7189234eca84df93efd69f1c4d8b7f22'
 
   input:
     tuple val(meta), path(dgCMatrix)
