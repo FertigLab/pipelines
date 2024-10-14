@@ -1,7 +1,7 @@
 process COGAPS {
   tag "$meta.id"
   label 'process_medium'
-  container 'ghcr.io/fertiglab/cogaps@sha256:ce86acbf8677e6ac1dbfcbdb4ccb1fbd7189234eca84df93efd69f1c4d8b7f22'
+  container 'ghcr.io/fertiglab/cogaps:master'
 
   input:
     tuple val(meta), path(dgCMatrix)
@@ -35,8 +35,8 @@ process COGAPS {
                              nPatterns = $params.npatterns,
                              sparseOptimization = as.logical($params.sparse),
                              distributed=$params.distributed);
-      params <- setDistributedParams(params, nSets = 7);
-      cogapsResult <- CoGAPS(data = data, params = params)
+      params <- setDistributedParams(params, nSets = $params.nsets);
+      cogapsResult <- CoGAPS(data = data, params = params, nThreads = $params.nthreads);
       saveRDS(cogapsResult, file = "${prefix}/cogapsResult.rds")'
 
   cat <<-END_VERSIONS > versions.yml
