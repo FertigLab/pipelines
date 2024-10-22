@@ -35,7 +35,9 @@ process COGAPS {
                              nPatterns = $params.npatterns,
                              sparseOptimization = as.logical($params.sparse),
                              distributed=$params.distributed);
-      params <- setDistributedParams(params, nSets = $params.nsets);
+      if (!is.null($params.distributed) & !("$params.distributed"=="null")){
+        params <- setDistributedParams(params, nSets = $params.nsets);
+      };
       cogapsResult <- CoGAPS(data = data, params = params, nThreads = $params.nthreads);
       saveRDS(cogapsResult, file = "${prefix}/cogapsResult.rds")'
 
