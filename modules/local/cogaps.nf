@@ -30,12 +30,16 @@ process COGAPS {
   Rscript -e 'library("CoGAPS");
       sparse <- readRDS("$dgCMatrix");
       data <- as.matrix(sparse);
+      #avoid errors with distributed params
+      dist_param <- NULL;
+      if(!("$params.distributed"=="null")){
+        dist_param <- "$params.distributed"};
       params <- CogapsParams(seed=42,
                              nIterations = $params.niterations,
                              nPatterns = $params.npatterns,
                              sparseOptimization = as.logical($params.sparse),
-                             distributed="$params.distributed");
-      if (!("$params.distributed"=="null")){
+                             distributed=dist_param);
+      if (!(is.null(dist_param))){
         params <- setDistributedParams(params, nSets = $params.nsets);
       };
       cogapsResult <- CoGAPS(data = data, params = params, nThreads = $params.nthreads);
