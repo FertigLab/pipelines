@@ -34,8 +34,8 @@ process COGAPS {
                              nIterations = $params.niterations,
                              nPatterns = $params.npatterns,
                              sparseOptimization = as.logical($params.sparse),
-                             distributed=$params.distributed);
-      if (!is.null($params.distributed) & !("$params.distributed"=="null")){
+                             distributed="$params.distributed");
+      if (!("$params.distributed"=="null")){
         params <- setDistributedParams(params, nSets = $params.nsets);
       };
       cogapsResult <- CoGAPS(data = data, params = params, nThreads = $params.nthreads);
