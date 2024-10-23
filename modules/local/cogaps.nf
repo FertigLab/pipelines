@@ -1,6 +1,7 @@
 process COGAPS {
   tag "$meta.id"
   label 'process_medium'
+  label 'process_long'
   container 'ghcr.io/fertiglab/cogaps:master'
 
   input:
