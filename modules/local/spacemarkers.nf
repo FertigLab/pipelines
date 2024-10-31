@@ -74,7 +74,7 @@ process SPACEMARKERS {
 process SPACEMARKERS_MQC {
   tag "$meta.id"
   label 'process_low'
-  container 'ghcr.io/deshpandelab/spacemarkers:devel'
+  container 'ghcr.io/deshpandelab/spacemarkers:main'
 
   input:
     tuple val(meta), path(spaceMarkers)
@@ -185,7 +185,7 @@ process SPACEMARKERS_MQC {
 process SPACEMARKERS_IMSCORES {
   tag "$meta.id"
   label 'process_low'
-  container 'ghcr.io/deshpandelab/spacemarkers:devel'
+  container 'ghcr.io/deshpandelab/spacemarkers:main'
 
   input:
     tuple val(meta), path(spaceMarkers)
