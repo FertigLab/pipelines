@@ -1,0 +1,3 @@
+[submodule "modules/local/spacemarkers"]
+	path = modules/local/spacemarkers
+	url = https://github.com/DeshpandeLab/SpaceMarkers
