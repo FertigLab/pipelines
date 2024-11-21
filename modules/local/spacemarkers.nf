@@ -4,7 +4,7 @@ process SPACEMARKERS {
   container 'ghcr.io/deshpandelab/spacemarkers:main'
 
   input:
-    tuple val(meta), path(cogapsResult), path(data)
+    tuple val(meta), path(deconvolved), path(data)
   output:
     tuple val(meta), path("${prefix}/spPatterns.rds"),   emit: spPatterns
     tuple val(meta), path("${prefix}/optParams.rds"),    emit: optParams
@@ -35,7 +35,7 @@ process SPACEMARKERS {
     
     #load spatial coords from tissue positions, deconvolved patterns, and expression
     coords <- load10XCoords("$data")
-    features <- getSpatialFeatures("$cogapsResult")
+    features <- getSpatialFeatures("$deconvolved")
     dataMatrix <- load10XExpr("$data")
 
     #add spatial coordinates to deconvolved data, only use barcodes present in data
