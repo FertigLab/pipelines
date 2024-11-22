@@ -1,7 +1,7 @@
 nextflow.enable.dsl=2
 
 include { PREPROCESS } from './modules/local/preprocess.nf'
-include { COGAPS } from './modules/local/cogaps.nf'
+include { COGAPS } from './modules/local/cogaps/nextflow/'
 include { SPACEMARKERS; 
           SPACEMARKERS_MQC;
           SPACEMARKERS_IMSCORES } from './modules/local/spacemarkers/nextflow/'
