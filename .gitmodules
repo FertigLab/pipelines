@@ -1,3 +1,6 @@
 [submodule "modules/local/spacemarkers"]
 	path = modules/local/spacemarkers
 	url = https://github.com/DeshpandeLab/SpaceMarkers
+[submodule "modules/local/cogaps"]
+	path = modules/local/cogaps
+	url = https://github.com/FertigLab/CoGAPS
